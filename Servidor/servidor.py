@@ -14,6 +14,8 @@ class GLOBALES:
     PORT = 65432
     sel = selectors.DefaultSelector()
     f = open('./archivos/Datos.txt', "rb")
+    indexArchivo = 1
+    fileLogs = open('./logs/prueba'+str(indexArchivo)+'.txt', "a+")
     cantidadClientes = 0
     tamannoArchivo = 0
     nombreArchivo = ""
@@ -40,12 +42,12 @@ def iniciar_server():
         archivo = int(input(""))
         if archivo == 1:
             GLOBALES.f = open('./archivos/Datos.txt', "rb")
-            GLOBALES.tamannoArchivo = (os.path.getsize('./archivos/Datos.txt'))/1024
+            GLOBALES.tamannoArchivo = (os.path.getsize('./archivos/Datos.txt'))/4096
             GLOBALES.nombreArchivo = "Datos.txt"
             eligio = True
         elif archivo == 2:
             GLOBALES.f = open('./archivos/Fondos One Piece.zip', "rb")
-            GLOBALES.tamannoArchivo = (os.path.getsize('./archivos/Fondos One Piece.zip'))/1024
+            GLOBALES.tamannoArchivo = (os.path.getsize('./archivos/Fondos One Piece.zip'))/4096
             GLOBALES.nombreArchivo = "Fondos One Piece.zip"
             eligio = True
         else:
@@ -60,13 +62,14 @@ def accept_wrapper(sock):
     data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'')
     events = selectors.EVENT_READ | selectors.EVENT_WRITE
     GLOBALES.sel.register(conn, events, data=data)
-    GLOBALES.clientes.insert(0, {"id": int(str(addr).split(",")[1].split(")")[0]), "handShakeSend": False, "handShakeReceived": False, "received": False})
+    GLOBALES.clientes.insert(0, {"id": int(str(addr).split(",")[1].split(")")[0]), "handShakeSend": False, "handShakeReceived": False, "received": False, "idLogs": GLOBALES.indexArchivo})
 
 
 def service_connection(key, mask, cliente):
     sock = key.fileobj
     data = key.data
     if mask & selectors.EVENT_READ:
+        #print("Reading...")
         recv_data = sock.recv(1024)  # Should be ready to read
         if recv_data == b'HandShake' and cliente['handShakeSend'] is not True:
             print('received', repr(recv_data), 'from connection', data.addr)
@@ -79,15 +82,25 @@ def service_connection(key, mask, cliente):
             print('received', repr(recv_data), 'from connection', data.addr)
             tiempo_final = time()
             tiempo_ejecucion = tiempo_final - tiempo_inicial
-            print(tiempo_ejecucion)
+            GLOBALES.fileLogs = open('./logs/prueba' + str(cliente['idLogs']) + '.txt', "a+")
+            GLOBALES.fileLogs.write('\nTiempo de Transferencia: ' + str(tiempo_ejecucion) + ' Seg')
+            GLOBALES.fileLogs.close()
             GLOBALES.clientesListos -= 1
             data.outb = b'hash:' + hashlib.sha1(GLOBALES.f.read()).digest()
             GLOBALES.f.seek(0)
         elif recv_data == b'Hashed':
+            GLOBALES.fileLogs = open('./logs/prueba' + str(cliente['idLogs']) + '.txt', "a+")
+            GLOBALES.fileLogs.write('\nEnvio Exitoso: Si')
+            GLOBALES.fileLogs.close()
+            GLOBALES.clientes.remove(cliente)
             print('received', repr(recv_data), 'from connection', data.addr)
             print('closing connection to', data.addr)
             GLOBALES.sel.unregister(sock)
             sock.close()
+        elif recv_data == b'WrongHashed':
+            GLOBALES.fileLogs = open('./logs/prueba' + str(cliente['idLogs']) + '.txt', "a+")
+            GLOBALES.fileLogs.write('\nEnvio Exitoso: No')
+            GLOBALES.fileLogs.close()
     if mask & selectors.EVENT_WRITE:
         if data.outb:
             print('sending... ',  'to', data.addr)
@@ -102,30 +115,7 @@ while True:
         if key.data is None:
             print("New Connection")
             accept_wrapper(key.fileobj)
-        elif GLOBALES.cantidadClientes == GLOBALES.clientesListos:
-            id = int(str(key.data.addr).split(",")[1].split(")")[0])
-            cliente = {}
-            for i in range(len(GLOBALES.clientes)):
-                if GLOBALES.clientes[i]['id'] == id:
-                    cliente = GLOBALES.clientes[i]
-                    break
-            if cliente['received'] is not True and cliente['handShakeReceived']:
-                key.data.outb = b'nombre:'+GLOBALES.nombreArchivo.encode('utf-8')+b',tamanno:'+bytearray(struct.pack("f",GLOBALES.tamannoArchivo))
-                service_connection(key, mask, cliente)
-                t.sleep(0.2)
-
-                tiempo_inicial = time()
-                key.data.outb = GLOBALES.f.read()
-                service_connection(key, mask, cliente)
-                """while dataSend:
-                    hash = hashlib.sha1(dataSend)
-                    key.data.outb = dataSend
-                    service_connection(key, mask, cliente)
-                    dataSend = GLOBALES.f.readline()"""
-                cliente['received'] = True
-                key.data.outb = b''
-                GLOBALES.f.seek(0)
-            service_connection(key, mask, cliente)
+            GLOBALES.indexArchivo += 1
         else:
             id = int(str(key.data.addr).split(",")[1].split(")")[0])
             cliente = {}
@@ -133,4 +123,25 @@ while True:
                 if GLOBALES.clientes[i]['id'] == id:
                     cliente = GLOBALES.clientes[i]
                     break
-            service_connection(key, mask, cliente)
+            if GLOBALES.cantidadClientes == GLOBALES.clientesListos:
+                if cliente['received'] is not True and cliente['handShakeReceived']:
+                    key.data.outb = b'nombre:'+GLOBALES.nombreArchivo.encode('utf-8')+b',tamanno:'+bytearray(struct.pack("f",GLOBALES.tamannoArchivo))
+                    service_connection(key, mask, cliente)
+                    t.sleep(0.2)
+
+                    tiempo_inicial = time()
+                    key.data.outb = GLOBALES.f.read()
+                    service_connection(key, mask, cliente)
+                    cliente['received'] = True
+                    key.data.outb = b''
+                    GLOBALES.f.seek(0)
+
+                    #Logs
+                    GLOBALES.fileLogs = open('./logs/prueba' + str(cliente['idLogs']) + '.txt', "a+")
+                    GLOBALES.fileLogs.write('Fecha: ' + t.strftime("%d/%m/%y") + ' Hora: ' + t.strftime("%I:%M:%S"))
+                    GLOBALES.fileLogs.write('\nNombre Archivo: ' + GLOBALES.nombreArchivo + ' Tamaño: ' + str(4 * GLOBALES.tamannoArchivo) + ' KB')
+                    GLOBALES.fileLogs.write('\nCliente: ' + str(cliente['id']))
+                    GLOBALES.fileLogs.close()
+                service_connection(key, mask, cliente)
+            else:
+                service_connection(key, mask, cliente)
