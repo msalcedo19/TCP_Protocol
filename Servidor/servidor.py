@@ -13,7 +13,7 @@ class GLOBALES:
     HOST = '127.0.0.1'
     PORT = 65432
     sel = selectors.DefaultSelector()
-    f = open('./archivos/Datos.txt', "rb")
+    f = open('./archivos/medium data.zip', "rb")
     indexArchivo = 1
     fileLogs = open('./logs/prueba'+str(indexArchivo)+'.txt', "a+")
     cantidadClientes = 0
@@ -36,19 +36,19 @@ def iniciar_server():
     GLOBALES.sel.register(lsock, selectors.EVENT_READ, data=None)
     eligio = False
     while eligio is not True:
-        print("Ingrese el número del archivo que desea enviar: ")
-        print("1. Datos.txt")
-        print("2. Fondos One Piece.zip")
+        print("Ingrese el numero del archivo que desea enviar: ")
+        print("1. medium data.zip")
+        print("2. big data.zip")
         archivo = int(input(""))
         if archivo == 1:
-            GLOBALES.f = open('./archivos/Datos.txt', "rb")
-            GLOBALES.tamannoArchivo = (os.path.getsize('./archivos/Datos.txt'))/4096
-            GLOBALES.nombreArchivo = "Datos.txt"
+            GLOBALES.f = open('./archivos/medium data.zip', "rb")
+            GLOBALES.tamannoArchivo = (os.path.getsize('./archivos/medium data.zip'))/4096
+            GLOBALES.nombreArchivo = "medium data.zip"
             eligio = True
         elif archivo == 2:
-            GLOBALES.f = open('./archivos/Fondos One Piece.zip', "rb")
-            GLOBALES.tamannoArchivo = (os.path.getsize('./archivos/Fondos One Piece.zip'))/4096
-            GLOBALES.nombreArchivo = "Fondos One Piece.zip"
+            GLOBALES.f = open('./archivos/big data.zip', "rb")
+            GLOBALES.tamannoArchivo = (os.path.getsize('./archivos/big data.zip'))/4096
+            GLOBALES.nombreArchivo = "big data.zip"
             eligio = True
         else:
             print("No existe ese archivo")
