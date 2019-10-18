@@ -138,9 +138,9 @@ while True:
 
                     #Logs
                     GLOBALES.fileLogs = open('./logs/prueba' + str(cliente['idLogs']) + '.txt', "a+")
-                    GLOBALES.fileLogs.write('Fecha: ' + t.strftime("%d/%m/%y") + ' Hora: ' + t.strftime("%I:%M:%S"))
-                    GLOBALES.fileLogs.write('\nNombre Archivo: ' + GLOBALES.nombreArchivo + ' Tamaño: ' + str(4 * GLOBALES.tamannoArchivo) + ' KB')
-                    GLOBALES.fileLogs.write('\nCliente: ' + str(cliente['id']))
+                    GLOBALES.fileLogs.write('Date: ' + t.strftime("%d/%m/%y") + ' Time: ' + t.strftime("%I:%M:%S"))
+                    GLOBALES.fileLogs.write('\nFile name: ' + GLOBALES.nombreArchivo + ' File size: ' + str(4 * GLOBALES.tamannoArchivo) + ' KB')
+                    GLOBALES.fileLogs.write('\nClient: ' + str(cliente['id']))
                     GLOBALES.fileLogs.close()
                 service_connection(key, mask, cliente)
             else:
